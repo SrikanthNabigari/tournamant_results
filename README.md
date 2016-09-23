@@ -21,18 +21,25 @@ matches_played(VIEW) : contains the matches played by each person
      
 # To initiate the Tournament Database 
 # Run the following commands
-'''bash
+```bash
+
 $ psql 
 
-'''
-'''bash
+```
+```bash
+
 > \i tournament.sql
-'''
-'''bash
+
+```
+```bash
 > \q
-''' 
+
+```
 
 # To run the project 
-'''bash
+
+```bash
+
 $ python tournament_test.py
-'''
+
+```
