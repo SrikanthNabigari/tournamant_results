@@ -1,5 +1,7 @@
 --
-DROP DATABASE IF EXISTS tournament;
+--DROP DATABASE IF EXISTS tournament;
+
+-- creates the tournament database
 CREATE DATABASE tournament;
 -- Table contains registered players names
 CREATE TABLE players ( id SERIAL PRIMARY KEY,

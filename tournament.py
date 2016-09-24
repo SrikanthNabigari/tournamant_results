@@ -5,34 +5,49 @@
 
 import psycopg2
 import itertools
+from contextlib import contextmanager
+
 def connect():
     """Connect to the PostgreSQL database.  Returns a database connection."""
-    return psycopg2.connect("dbname=tournament")
+    try:
+        return psycopg2.connect("dbname=tournament")
+    except:
+        print("Connection failed")
+
+@contextmanager 
+def get_cursor():
+    """
+    Query helper function using context lib. Creates a cursor from a database
+    connection object, and performs queries using that cursor.
+    """
+    DB = connect()
+    cursor = DB.cursor()
+    try:
+        yield cursor
+    except:
+        raise
+    else:
+        DB.commit()
+    finally:
+        cursor.close()
+        DB.close()        
 
 def deleteMatches():
     """Remove all the match records from the database."""
-    DB = connect()
-    c = DB.cursor()
-    c.execute("TRUNCATE matches;")
-    DB.commit()
-    DB.close()
+    with get_cursor() as cursor:
+        cursor.execute("TRUNCATE matches;")
 
 def deletePlayers():
     """Remove all the player records from the database."""
-    DB = connect()
-    c = DB.cursor()
-    c.execute("DELETE FROM players;")
-    DB.commit()
-    DB.close()
+    with get_cursor() as cursor:
+        cursor.execute("DELETE FROM players;")
 def countPlayers():
     """Returns the number of players currently registered."""
-    DB = connect()
-    c = DB.cursor()
-    c.execute("SELECT COUNT(*) AS total FROM players;")
-    total = c.fetchall()
-    DB.close()
-    for row in total:
-        return row[0]
+    with get_cursor() as cursor:
+        cursor.execute("SELECT COUNT(*) AS total FROM players;")
+        total = cursor.fetchall()
+        for row in total:
+            return row[0]
 
 
 def registerPlayer(name):
@@ -44,11 +59,8 @@ def registerPlayer(name):
     Args:
       name: the player's full name (need not be unique).
     """
-    DB = connect()
-    c = DB.cursor()
-    c.execute("INSERT INTO players (name) VALUES (%s);",(name,))
-    DB.commit()
-    DB.close()
+    with get_cursor() as cursor:
+        cursor.execute("INSERT INTO players (name) VALUES (%s);",(name,))
 
 def playerStandings():
     """Returns a list of the players and their win records, sorted by wins.
@@ -63,18 +75,16 @@ def playerStandings():
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
-    DB = connect()
-    c = DB.cursor()
-    query = """SELECT players.id,players.name,winners_record.wins,matches_played.matches FROM players
-                        LEFT JOIN winners_record ON players.id = winners_record.player
-                        LEFT JOIN matches_played ON players.id = matches_played.player
-                        GROUP BY players.id,players.name,winners_record.wins,matches_played.matches
-                        ORDER BY winners_record.wins DESC;
-            """
-    c.execute(query)
-    standings = c.fetchall()
-    DB.close()
-    return standings
+    with get_cursor() as cursor:
+        query = """SELECT players.id,players.name,winners_record.wins,matches_played.matches FROM players
+                            LEFT JOIN winners_record ON players.id = winners_record.player
+                            LEFT JOIN matches_played ON players.id = matches_played.player
+                            GROUP BY players.id,players.name,winners_record.wins,matches_played.matches
+                            ORDER BY winners_record.wins DESC;
+                """
+        cursor.execute(query)
+        standings = cursor.fetchall()
+        return standings
 
 def reportMatch(winner, loser):
     """Records the outcome of a single match between two players.
@@ -83,13 +93,11 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
-    DB = connect()
-    c = DB.cursor()
-    query = "INSERT INTO matches (winner_ids,loser_ids) VALUES (%s,%s);"
-    params = (winner,loser)
-    c.execute(query,params)
-    DB.commit()
-    DB.close()
+    with get_cursor() as cursor:
+        query = "INSERT INTO matches (winner_ids,loser_ids) VALUES (%s,%s);"
+        params = (winner,loser)
+        cursor.execute(query,params)
+        
  
 def swissPairings():
     """Returns a list of pairs of players for the next round of a match.
