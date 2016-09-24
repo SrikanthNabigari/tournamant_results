@@ -3,6 +3,9 @@
 
 -- creates the tournament database
 CREATE DATABASE tournament;
+
+\c tournament
+
 -- Table contains registered players names
 CREATE TABLE players ( id SERIAL PRIMARY KEY,
                     name TEXT );
